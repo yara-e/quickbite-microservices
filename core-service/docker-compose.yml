@@ -1,0 +1,178 @@
+# =====================================================================
+# QuickBite — core-service local stack
+#
+# Mirrors ../order-service/docker-compose.yml (same image versions,
+# healthcheck patterns, env_file + host-override approach). Container
+# names are prefixed `quickbite-core-` so this stack can run alongside
+# the order-service stack without name collisions.
+#
+# Usage:
+#     docker compose up -d --build           # build images + start everything
+#     docker compose logs -f core-service    # tail app logs
+#     docker compose run --rm migrate         # run DB migrations once
+#     docker compose down                      # stop, keep data
+#     docker compose down -v                   # stop AND wipe DB volumes
+# =====================================================================
+
+services:
+  # -------------------------------------------------------------------
+  # Postgres — single database (quickbite_core), auto-created on first boot.
+  # -------------------------------------------------------------------
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: quickbite-core-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Created automatically on first boot — matches DB_NAME in .env.
+      POSTGRES_DB: quickbite_core
+    ports:
+      # host:container — reach it from psql / DataGrip on the host.
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` returns 0 once Postgres accepts connections.
+      test: ["CMD-SHELL", "pg_isready -U postgres -d quickbite_core"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # -------------------------------------------------------------------
+  # Redis — cache + idempotency keys
+  # -------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: quickbite-core-redis
+    restart: unless-stopped
+    # AOF persistence so cached data survives restarts.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # -------------------------------------------------------------------
+  # RabbitMQ — outbound domain events drained by the outbox worker.
+  # -------------------------------------------------------------------
+  rabbitmq:
+    # "-management" variant ships the web UI at http://localhost:15672
+    image: rabbitmq:3.13-management-alpine
+    container_name: quickbite-core-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672" # AMQP — the worker connects here
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # -------------------------------------------------------------------
+  # migrate — one-shot job: `knex migrate:latest` against the DB, then exits.
+  # Runs the TypeScript knexfile via ts-node (see Dockerfile).
+  # -------------------------------------------------------------------
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder # <--- Instructs Docker to stop before 'npm prune'
+    container_name: quickbite-core-migrate
+    command: ["npm", "run", "migrate"]
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+  # -------------------------------------------------------------------
+  # core-service — the HTTP server (src/server.ts -> dist/server.js)
+  # -------------------------------------------------------------------
+  core-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quickbite-core-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Point the app at the docker-network service names, not localhost.
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "3000:3000"
+    healthcheck:
+      # Hit the app's own DB-backed health endpoint. node is always present;
+      # bookworm-slim has no curl/wget, so use a tiny node one-liner.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      # Schema must exist before the app serves traffic.
+      migrate:
+        condition: service_completed_successfully
+
+  # -------------------------------------------------------------------
+  # worker — outbox drain (src/worker.ts -> dist/worker.js)
+  # Same image as the server, different command.
+  # -------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quickbite-core-worker
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+# =====================================================================
+# Named volumes — persist DB / cache / broker data across `down`.
+# Wiped only by `docker compose down -v`.
+# =====================================================================
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:

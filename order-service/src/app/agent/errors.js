@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AgentNotOnlineError = exports.NotYourTaskError = exports.OrderNotInReadyStateError = exports.OrderAlreadyClaimedError = exports.NotInCandidateListError = exports.OfferNotFoundOrExpiredError = exports.OfflineWhilePickedForbidden = exports.AgentRoleRequiredError = void 0;
+const AppError_1 = require("../../lib/error/AppError");
+exports.AgentRoleRequiredError = new AppError_1.AppError("AgentRoleRequired", 403);
+exports.OfflineWhilePickedForbidden = new AppError_1.AppError("OfflineWhilePickedForbidden", 409);
+exports.OfferNotFoundOrExpiredError = new AppError_1.AppError("OfferNotFoundOrExpired", 404);
+exports.NotInCandidateListError = new AppError_1.AppError("NotInCandidateList", 403);
+exports.OrderAlreadyClaimedError = new AppError_1.AppError("OrderAlreadyClaimed", 409);
+exports.OrderNotInReadyStateError = new AppError_1.AppError("OrderNotInReadyState", 409);
+exports.NotYourTaskError = new AppError_1.AppError("NotYourTask", 403);
+exports.AgentNotOnlineError = new AppError_1.AppError("AgentNotOnline", 409);

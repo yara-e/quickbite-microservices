@@ -1,0 +1,49 @@
+// {
+//   // Visit https://aka.ms/tsconfig to read more about this file
+//   "compilerOptions": {
+//      "target" :"ES2022",
+//      "module":"NodeNext",
+//      "moduleResolution": "NodeNext",
+//      "rootDir": "src",
+//      "outDir": "dist",
+//      "strict": true,
+//      "resolveJsonModule": true,
+//      "skipLibCheck": true,
+//      "forceConsistentCasingInFileNames": false,
+//      "noImplicitAny": true,
+//      "experimentalDecorators": true,
+//     "emitDecoratorMetadata": true,
+//     "esModuleInterop": true,
+//     "isolatedModules": true,
+//     "types": ["node", "jest"],
+    
+//     "paths": {
+//       "@/*": ["./src/*"]
+//     },
+
+//   },
+//   "include":["src/**/*"]
+// }
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["node", "jest"],
+    "outDir": "./dist",
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "tests/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

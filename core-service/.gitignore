@@ -1,0 +1,16 @@
+﻿node_modules/
+coverage/
+dist/
+.env
+*.log
+.DS_Store
+.idea/
+.vscode/
+.zip
+.env.test
+
+# local experimentation scripts â€” not tracked
+play/
+# test artifacts
+coverage/
+tests/**/*.js

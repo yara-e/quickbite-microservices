@@ -1,0 +1,40 @@
+
+services:
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: quickbite-order-service
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/quickbite_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+      # --- Core Service Internal API URL ---
+      - CORE_SERVICE_URL=http://core-service:3000
+
+      # --- Kashier Payment Gateway Configurations ---
+      - KASHIER_MERCHANT_ID=${KASHIER_MERCHANT_ID}
+      - KASHIER_API_KEY=${KASHIER_API_KEY}
+      - KASHIER_SECRET_KEY=${KASHIER_SECRET_KEY}
+      - KASHIER_BASE_URL=https://checkout.kashier.io
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      # core-service:
+      #   condition: service_healthy
+    networks:
+      - quickbite-network
+    restart: unless-stopped
+
+networks:
+  quickbite-network:
+    driver: bridge

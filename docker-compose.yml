@@ -1,0 +1,95 @@
+services:
+  # --- Infrastructure ---
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: quickbite-core-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: quickbite_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quickbite-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: quickbite-core-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quickbite-network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: quickbite-core-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quickbite-network
+
+  # --- Microservices ---
+  core-service:
+    build:
+      context: ./core-service
+      dockerfile: Dockerfile
+    container_name: quickbite-core-service
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./core-service/.env
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - quickbite-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: quickbite-order-service
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./order-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      core-service:
+        condition: service_healthy
+    networks:
+      - quickbite-network
+
+networks:
+  quickbite-network:
+    driver: bridge
