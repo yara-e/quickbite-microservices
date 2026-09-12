@@ -1,21 +1,3 @@
-// {
-//   "compilerOptions": {
-//     "target": "ES2022",
-//     "module": "commonjs",
-//     "moduleResolution": "node",
-//     "rootDir": "src",
-//     "outDir": "dist",
-//     "strict": true,
-//     "resolveJsonModule": true,
-//     "skipLibCheck": true,
-//     "forceConsistentCasingInFileNames": false,
-//     "noImplicitAny": true,
-//     "experimentalDecorators": true,
-//     "emitDecoratorMetadata": true,
-//     "esModuleInterop": true
-//   },
-//   "include": ["src", "reset-and-seed.ts"]
-// }
 {
   "compilerOptions": {
     "target": "ES2022",
@@ -28,7 +10,8 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "outDir": "./dist",
   },
   "include": [
     "src/**/*",

@@ -1,0 +1,79 @@
+name: Order Service CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "order-service/**"
+      - ".github/workflows/order-service-ci.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "order-service/**"
+      - ".github/workflows/order-service-ci.yml"
+
+jobs:
+  test-and-build:
+    name: Build & Test Order Service
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./order-service
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quickbite_order_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: order-service/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check TypeScript Compilation
+        run: npm run build --if-present
+
+      - name: Run Unit & Integration Tests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/quickbite_order_test_db
+          RABBITMQ_URL: amqp://guest:guest@localhost:5672
+          KASHIER_API_KEY: test_api_key
+          KASHIER_MERCHANT_ID: test_merchant_id
+        run: npm test --if-present
+
+      - name: Verify Docker Build Stage
+        run: docker build -t quickbite-order-service:test .
