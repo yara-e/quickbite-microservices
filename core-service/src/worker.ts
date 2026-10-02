@@ -1,10 +1,10 @@
 import "reflect-metadata";
-import {Cron} from "croner";
-import {env} from "./lib/config/env";
-import {logger} from "./lib/logger/logger";
-import {db} from "./lib/knex/knex";
-import {messageBroker} from "./lib/events/init";
-import {drainOutbox} from "./lib/events/outbox-drain";
+import { Cron } from "croner";
+import { env } from "./lib/config/env";
+import { logger } from "./lib/logger/logger";
+import { db } from "./lib/knex/knex";
+import { messageBroker } from "./lib/events/init";
+import { drainOutbox } from "./lib/events/outbox-drain";
 
 /**
  * Outbox worker — runs independently of the HTTP server.
@@ -19,7 +19,7 @@ async function main() {
     try {
         await messageBroker.connect();
         await messageBroker.declareExchange(env.rabbit.exchange);
-        logger.info("worker: broker connected, exchange declared", {exchange: env.rabbit.exchange});
+        logger.info("worker: broker connected, exchange declared", { exchange: env.rabbit.exchange });
     } catch (err) {
         logger.warn("worker: broker not reachable at boot — will retry on every drain", {
             error: (err as Error)?.message ?? String(err),
@@ -27,14 +27,14 @@ async function main() {
     }
 
     const pattern = env.rabbit.drainCron;
-    const job = new Cron(pattern, {protect: true}, async () => {
+    const job = new Cron(pattern, { protect: true }, async () => {
         try {
             await drainOutbox();
         } catch (err) {
-            logger.error("outbox drain error", {error: (err as Error).message});
+            logger.error("outbox drain error", { error: (err as Error).message });
         }
     });
-    logger.info("worker: outbox drain scheduled", {pattern, batchSize: env.rabbit.batchSize});
+    logger.info("worker: outbox drain scheduled", { pattern, batchSize: env.rabbit.batchSize });
 
     const shutdown = async () => {
         logger.info("worker: shutdown requested");
@@ -42,11 +42,11 @@ async function main() {
         try {
             await messageBroker.close();
         } catch (err) {
-            logger.warn("worker: broker close error", {error: (err as Error).message});
+            logger.warn("worker: broker close error", { error: (err as Error).message });
         }
         try {
             await db.destroy();
-        } catch {}
+        } catch { }
         process.exit(0);
     };
 
@@ -55,6 +55,6 @@ async function main() {
 }
 
 main().catch((err) => {
-    logger.error("worker: fatal", {error: (err as Error).message, stack: (err as Error).stack});
+    logger.error("worker: fatal", { error: (err as Error).message, stack: (err as Error).stack });
     process.exit(1);
 });

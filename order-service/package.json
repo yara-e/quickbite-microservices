@@ -15,7 +15,7 @@
     "start": "node dist/server.js",
     "start:worker": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
-    "migrate": "knex --knexfile src/lib/knex/knexfile.ts migrate:latest",
+    "migrate": "knex --knexfile dist/lib/knex/knexfile.js migrate:latest",
     "migrate:rollback": "knex --knexfile src/lib/knex/knexfile.ts migrate:rollback",
     "migrate:status": "knex --knexfile src/lib/knex/knexfile.ts migrate:status",
     "migrate:make": "knex --knexfile src/lib/knex/knexfile.ts migrate:make",

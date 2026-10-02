@@ -8,7 +8,8 @@ const config: Knex.Config = {
       port: env.db.port,
       user: env.db.username,
       database: env.db.name,
-      password: env.db.password
+      password: env.db.password,
+      ssl: { rejectUnauthorized: false },
    },
    pool: {
       max: env.db.poolMax

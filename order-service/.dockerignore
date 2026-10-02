@@ -1,11 +1,31 @@
+# Build context — keep the image build lean.
 node_modules
 dist
+coverage
 .env
 .env.*
+!.env.example
+*.log
+npm-debug.log*
+.DS_Store
+.idea
+.vscode
+*.iml
+.claude
 .git
 .gitignore
-npm-debug.log
+play
+docs
+*.zip
+*.7z
 Dockerfile
-README.md
-coverage
+.dockerignore
+docker-compose.yml
+
+# The build only needs src/ + tsconfig.json + manifests; tests are redundant.
 tests
+test
+scripts
+jest.config.js
+jest.integration.config.js
+tsconfig.test.json

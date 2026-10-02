@@ -16,34 +16,36 @@ export class RedisCacheProvider implements ICacheProvider {
             port: config.port,
             password: config.password,
             lazyConnect: true,
-            maxRetriesPerRequest: 3
-        })
-        this.client.on("error", (err) => { console.error("Redis Error:", err.message); });
-        this.client.connect().catch((err) => { console.error("Redis Connect Error:", err) });
+            maxRetriesPerRequest: 3,
+            enableAutoPipelining: true, // Optimizes concurrent load test requests automatically
+        });
+
+        this.client.on("error", (err) => {
+            console.error("[Redis Error]:", err.message);
+        });
+
+        this.client.connect().catch((err) => {
+            console.error("[Redis Connection Error]:", err.message);
+        });
     }
-    async set(key: string, value: any, ttlSeconds?: number): Promise<any> {
+
+    async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
         if (ttlSeconds) {
             await this.client.set(key, value, "EX", ttlSeconds);
         } else {
             await this.client.set(key, value);
         }
-
     }
 
-    /**
-     * Exposes the underlying ioredis client. Used by test helpers to sweep
-     * cache keys between integration tests. Treat as escaping the interface —
-     * prefer the ICacheProvider methods in application code.
-     */
-    getClient(): Redis {
-        return this.client;
-    }
-
-    async get(key: string): Promise<any> {
+    async get(key: string): Promise<string | null> {
         return this.client.get(key);
     }
 
-    async del(key: string): Promise<any> {
+    async del(key: string): Promise<number> {
         return this.client.del(key);
+    }
+
+    getClient(): Redis {
+        return this.client;
     }
 }

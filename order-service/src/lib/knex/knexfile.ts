@@ -1,5 +1,5 @@
-import type {Knex} from "knex";
-import {env} from "../config/env";
+import type { Knex } from "knex";
+import { env } from "../config/env";
 
 /**
  * Builds a knex config for the region+cluster identified by env vars.
@@ -29,8 +29,9 @@ const config: Knex.Config = {
         user: shard.username,
         password: shard.password,
         database: shard.name,
+        ssl: { rejectUnauthorized: false },
     },
-    pool: {min: 0, max: env.db.poolMax},
+    pool: { min: 0, max: env.db.poolMax },
     migrations: {
         directory: env.db.migrationDirectory,
         extension: env.db.migrationExtension,

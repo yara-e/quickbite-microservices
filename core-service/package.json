@@ -11,7 +11,7 @@
     "worker:dev": "tsx watch src/worker",
     "start": "node dist/server.js",
     "worker": "node dist/worker.js",
-    "migrate": "knex --knexfile dist/lib/knex/knexfile.js migrate:latest",
+    "migrate": "knex --knexfile dist/src/lib/knex/knexfile.js migrate:latest",
     "migrate:rollback": "knex --knexfile src/lib/knex/knexfile.ts migrate:rollback",
     "migrate:status": "knex --knexfile src/lib/knex/knexfile.ts migrate:status",
     "migrate:make": "knex --knexfile src/lib/knex/knexfile.ts migrate:make"
@@ -26,6 +26,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "compression": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "croner": "^10.0.1",
@@ -46,6 +47,7 @@
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",
+    "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

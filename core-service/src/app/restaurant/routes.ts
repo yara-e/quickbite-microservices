@@ -4,12 +4,13 @@ import {rbac, requireRestaurantMember} from "../../lib/auth/rbac";
 import {TOKENS} from "../../lib/di/tokens";
 import {container} from "../../lib/di/container";
 import {RestaurantController} from "./controller/restaurant.controller";
+import { withCache } from "@/lib/cache/withCache";
 
 export const restaurantRouter = Router();
 
 const restaurantController = container.resolve<RestaurantController>(TOKENS.RestaurantController);
 
-restaurantRouter.get('/', restaurantController.getAll);
+restaurantRouter.get('/',  withCache(300),restaurantController.getAll);
 restaurantRouter.get('/:id', restaurantController.getById);
 restaurantRouter.post('/', authenticate, restaurantController.create); // system_admin only, checked in service
 restaurantRouter.patch('/:id',

@@ -8,6 +8,7 @@ dist/
 .vscode/
 .zip
 .env.test
+.TESTING.md
 
 # local experimentation scripts â€” not tracked
 play/

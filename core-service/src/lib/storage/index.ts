@@ -20,13 +20,12 @@ export class StorageService implements IStorageService {
   private provider: S3StorageProvider;
 
   constructor() {
-    // Reads environment config inside lib/
     this.provider = new S3StorageProvider({
-      bucketName: env.r2.bucketName,
-      endpoint: env.r2.endpoint,
-      accessKeyId: env.r2.accessKeyId,
-      secretAccessKey: env.r2.secretAccessKey,
-      publicUrl: env.r2.publicUrl,
+      bucketName: env.s3.bucketName,
+      region: env.s3.region,
+      accessKeyId: env.s3.accessKeyId,
+      secretAccessKey: env.s3.secretAccessKey,
+      publicUrl: env.s3.publicUrl,
     });
   }
 

@@ -1,114 +1,127 @@
-version: '3.8'
-
 services:
-  # ---------------------------------------------------------
-  # DATABASES & BROKERS
-  # ---------------------------------------------------------
-  postgres:
-    image: postgis/postgis:16-3.4
-    container_name: quickbite-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-quickbite_db}
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
     ports:
-      - "5433:5432"
+      - "80:80"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-quickbite_db}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - core-service
+      - order-service
+    restart: unless-stopped
     networks:
-      - quickbite-network
+      - app-network
 
-  redis:
-    image: redis:7-alpine
-    container_name: quickbite-redis
-    restart: always
+  core-service:
+    build:
+      context: ./core-service
+      dockerfile: Dockerfile
+    container_name: core-service
     ports:
-      - "6380:6379"
+      - "3000:3000"
+    env_file:
+      - ./core-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@postgres-core:5432/quickbite_core?schema=public
+      DB_HOST: postgres-core
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./order-service/.env
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres-core
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: quickbite_core
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  postgres-core:
+    image: postgis/postgis:16-3.4
+    container_name: postgres-core
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: quickbite_core
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d quickbite_core"]
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - postgres_core_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
-      - quickbite-network
+      - app-network
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: quickbite-rabbitmq
-    restart: always
+    container_name: rabbitmq
     ports:
-      - "5673:5672"   # AMQP protocol port
-      - "15673:15672" # Management UI dashboard
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - quickbite-network
+      - app-network
 
-  # ---------------------------------------------------------
-  # MICROSERVICES
-  # ---------------------------------------------------------
-  core-service:
-    build:
-      context: ./core-service
-      dockerfile: Dockerfile
-    container_name: quickbite-core-service
-    restart: always
+  redis:
+    image: redis:alpine
+    container_name: redis
     ports:
-      - "3000:3000"
-    environment:
-      PORT: 3000
-      NODE_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quickbite_db}
-      REDIS_URL: redis://redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
-      - quickbite-network
-
-  order-service:
-    build:
-      context: ./order-service
-      dockerfile: Dockerfile
-    container_name: quickbite-order-service
-    restart: always
-    ports:
-      - "4000:4000"
-    environment:
-      PORT: 4000
-      NODE_ENV: development
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quickbite_db}
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
-      KASHIER_API_KEY: ${KASHIER_API_KEY}
-      KASHIER_MERCHANT_ID: ${KASHIER_MERCHANT_ID}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - quickbite-network
-
-networks:
-  quickbite-network:
-    driver: bridge
+      - app-network
 
 volumes:
-  postgres_data:
+  postgres_core_data:
+
+networks:
+  app-network:
+    driver: bridge

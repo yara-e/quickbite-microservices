@@ -13,3 +13,4 @@ play/
 # test artifacts
 coverage/
 tests/**/*.js
+src/**/*.js
