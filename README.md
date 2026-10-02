@@ -13,8 +13,8 @@ QuickBite is an **asynchronous, event-driven microservices backend** engineered 
 The production infrastructure is deployed on **AWS ECS (Fargate)** and **AWS RDS (PostgreSQL/PostGIS)** behind an **AWS Application Load Balancer (ALB)**:
 
 
-* 💚 **Core Service Health Check:** [`http://quickbite-lb-1887640997.us-east-1.elb.amazonaws.com:3000/api/health`](http://quickbite-lb-1887640997.us-east-1.elb.amazonaws.com:3000/api/health)
-* 🧡 **Order Service Health Check:** [`http://quickbite-lb-1887640997.us-east-1.elb.amazonaws.com:4000/api/health`](http://quickbite-lb-1887640997.us-east-1.elb.amazonaws.com:4000/api/health)
+* 💚 **Core Service Health Check:** [`http://alb-1918623630.us-north-1.elb.amazonaws.com:3000/api/health`](http://alb-1918623630.us-north-1.elb.amazonaws.com:3000/api/health)
+* 🧡 **Order Service Health Check:** [`http://alb-1918623630.us-north-1.elb.amazonaws.com:4000/api/health`](http://alb-1918623630.us-north-1.elb.amazonaws.com:4000/api/health)
 * 📜 **Postman Collection & QA Setup:** See [`scripts/reset-and-seed.ts`](scripts/reset-and-seed.ts) for seed credentials.
 
 ---
@@ -104,7 +104,7 @@ QuickBite decouples domain operations into two main Node.js application services
 ```
 
 1. **Containerization:** Multi-stage `Dockerfile` configurations yield slim Node.js 22 runtime images for deployment to AWS ECS Fargate.
-2. **Gateway & Load Balancing:** AWS Application Load Balancer (ALB) handles path-based routing (`/api/v1/core/*` → Core Service, `/api/v1/orders/*` → Order Service).
+2. **Gateway & Load Balancing:** AWS Application Load Balancer (ALB) handles path-based routing (`:3000/api/*` → Core Service, `:4000/api/*` → Order Service).
 3. **Automated CI/CD:** GitHub Actions workflows run TypeScript checks, unit tests, integration suites, and Docker image builds on every pull request.
 
 ---
