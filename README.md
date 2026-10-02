@@ -13,8 +13,8 @@ QuickBite is an **asynchronous, event-driven microservices backend** engineered 
 The production infrastructure is deployed on **AWS ECS (Fargate)** and **AWS RDS (PostgreSQL/PostGIS)** behind an **AWS Application Load Balancer (ALB)**:
 
 
-* 💚 **Core Service Health Check:** [`http://alb-1918623630.us-north-1.elb.amazonaws.com:3000/api/health`](http://alb-1918623630.us-north-1.elb.amazonaws.com:3000/api/health)
-* 🧡 **Order Service Health Check:** [`http://alb-1918623630.us-north-1.elb.amazonaws.com:4000/api/health`](http://alb-1918623630.us-north-1.elb.amazonaws.com:4000/api/health)
+* 💚 **Core Service Health Check:** [`http://alb-1918623630.eu-north-1.elb.amazonaws.com:3000/api/health`](http://alb-1918623630.eu-north-1.elb.amazonaws.com:3000/api/health)
+* 🧡 **Order Service Health Check:** [`http://alb-1918623630.eu-north-1.elb.amazonaws.com:4000/api/health`](http://alb-1918623630.eu-north-1.elb.amazonaws.com:4000/api/health)
 * 📜 **Postman Collection & QA Setup:** See [`scripts/reset-and-seed.ts`](scripts/reset-and-seed.ts) for seed credentials.
 
 ---
@@ -45,7 +45,7 @@ QuickBite decouples domain operations into two main Node.js application services
                     │   Path Routing & Rate Limits  │
                     └───────┬───────────────┬───────┘
                             │               │
-               /api/v1/core/*              /api/v1/orders/*
+               :3000/api/*              :4000/api/*
                             │               │
                             ▼               ▼
              ┌──────────────────┐   ┌─────────────────────────┐
@@ -58,7 +58,7 @@ QuickBite decouples domain operations into two main Node.js application services
                       ▼                        │       ▼
              ┌────────────────┐     ┌──────────┴───────────────┐
              │   PostgreSQL   │     │      Redis Cluster       │
-             │   (PostGIS)    │     │ Caching · Locks · GEO    │
+             │   (PostGIS)    │     │         Caching          │
              │ Sharded catalog│     └───────────┬─────────────┘
              └────────────────┘                 │
                                                 ▼
