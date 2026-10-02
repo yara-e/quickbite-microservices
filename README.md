@@ -15,7 +15,6 @@ The production infrastructure is deployed on **AWS ECS (Fargate)** and **AWS RDS
 
 * 💚 **Core Service Health Check:** [`http://alb-1918623630.eu-north-1.elb.amazonaws.com:3000/api/health`](http://alb-1918623630.eu-north-1.elb.amazonaws.com:3000/api/health)
 * 🧡 **Order Service Health Check:** [`http://alb-1918623630.eu-north-1.elb.amazonaws.com:4000/api/health`](http://alb-1918623630.eu-north-1.elb.amazonaws.com:4000/api/health)
-* 📜 **Postman Collection & QA Setup:** See [`scripts/reset-and-seed.ts`](scripts/reset-and-seed.ts) for seed credentials.
 
 ---
 
